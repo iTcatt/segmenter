@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -80,7 +79,7 @@ func (ps PostgresStorage) CreateSegment(name string) error {
 	// }
 
 	insertSQL := "insert into segment(name) values($1);"
-	_, err = ps.conn.Exec(context.Background(), insertSQL, name)
+	_, err := ps.conn.Exec(context.Background(), insertSQL, name)
 	if err != nil {
 		return fmt.Errorf("CreateSegment: %v", err)
 	}
