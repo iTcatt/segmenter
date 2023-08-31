@@ -13,6 +13,8 @@ make
 Пример:
 
 POST localhost:3000/api/create
+
+```json:
 {
     "segments":[
         "AVITO_VOICE_MESSAGES",
@@ -21,3 +23,5 @@ POST localhost:3000/api/create
         "AVITO_DISCOUNT_50"
     ]
 }
+
+```
