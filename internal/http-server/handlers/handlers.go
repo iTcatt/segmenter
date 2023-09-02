@@ -29,12 +29,16 @@ func CreateSegmentsHandler(s storage.Storage) http.HandlerFunc {
 		
 		for _, segment := range req.Segments {
 			err := s.CreateSegment(segment)
-			if err != nil {
-				create[segment] = "not created"
-				log.Printf("Create segment '%s' failed: %v\n", segment, err)
-			} else {
+			switch err {
+			case storage.ErrAlreadyExist:
+				create[segment] = "already exist"
+				log.Printf("Segment '%v' already exist", segment)
+			case nil:
 				create[segment] = "created"
 				log.Printf("Segment '%v' was created", segment)
+			default:
+				create[segment] = "not created"
+				log.Printf("Create segment '%s' failed: %v\n", segment, err)
 			}
 		}
 		resp, err := json.Marshal(create)

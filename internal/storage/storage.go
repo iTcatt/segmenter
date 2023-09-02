@@ -1,6 +1,9 @@
 package storage
 
-import "github.com/iTcatt/avito-task/internal/types"
+import (
+	"errors"
+	"github.com/iTcatt/avito-task/internal/types"
+)
 
 type Storage interface {
 	CreateSegment(name string) error
@@ -9,3 +12,4 @@ type Storage interface {
 	GetSegments(id int) (types.User, error)
 }
 
+var ErrAlreadyExist = errors.New("already exist")

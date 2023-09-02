@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/iTcatt/avito-task/internal/storage"
 	"github.com/iTcatt/avito-task/internal/types"
 	"github.com/jackc/pgx/v5"
 )
@@ -46,7 +47,7 @@ func NewPostgresStorage() (*PostgresStorage, error) {
 }
 
 // create tables: user, segment, usersegment
-func (ps PostgresStorage) StartUp() error {
+func (ps *PostgresStorage) StartUp() error {
 	_, err := ps.conn.Exec(context.Background(), createUsersSQL)
 	if err != nil {
 		return err
@@ -68,33 +69,33 @@ func (ps PostgresStorage) StartUp() error {
 	return nil
 }
 
-func (ps PostgresStorage) CreateSegment(name string) error {
-	// requestSQL := "SELECT name FROM segment WHERE name = $1;"
-	// row := ps.conn.QueryRow(context.Background(), requestSQL, name)
+func (ps *PostgresStorage) CreateSegment(name string) error {
+	requestSQL := "SELECT segment_name FROM segment WHERE segment_name = $1;"
+	row := ps.conn.QueryRow(context.Background(), requestSQL, name)
 
-	// var source string
-	// err := row.Scan(&source)
-	// if errors.Is(err, pgx.ErrNoRows) {
-	// 	return fmt.Errorf("CreateSegment: %s already exist", name)
-	// }
-
-	insertSQL := "insert into segment(name) values($1);"
-	_, err := ps.conn.Exec(context.Background(), insertSQL, name)
+	var result string
+	err := row.Scan(&result)
+	if err == nil {
+		return storage.ErrAlreadyExist
+	}
+	
+	insertSQL := "insert into segment(segment_name) values($1);"
+	_, err = ps.conn.Exec(context.Background(), insertSQL, name)
 	if err != nil {
-		return fmt.Errorf("CreateSegment: %v", err)
+		return err
 	}
 	return nil
 }
 
-func (ps PostgresStorage) DeleteSegment(name string) error {
+func (ps *PostgresStorage) DeleteSegment(name string) error {
 	return nil
 }
 
-func (ps PostgresStorage) AddUser(id int, addedSegments []string, removedSegments []string) error {
+func (ps *PostgresStorage) AddUser(id int, addedSegments []string, removedSegments []string) error {
 
 	return nil
 }
 
-func (ps PostgresStorage) GetSegments(id int) (types.User, error) {
+func (ps *PostgresStorage) GetSegments(id int) (types.User, error) {
 	return types.User{}, nil
 }
