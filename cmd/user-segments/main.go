@@ -23,7 +23,8 @@ func main() {
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 
-	router.Post("/api/create", handlers.CreateSegmentsHandler(db))
+	router.Post("/api/segments", handlers.CreateSegmentsHandler(db))
+	router.Post("/api/users", handlers.CreateUsersHandler(db))
 
 	log.Fatal(http.ListenAndServe(":3000", router))
 }

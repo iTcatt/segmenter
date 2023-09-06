@@ -3,7 +3,7 @@
 # Запуск
 make
 
-./user-segments
+./build/user-segments
 
 # Формат запросов 
 
@@ -12,8 +12,7 @@ make
 
 Пример:
 
-POST localhost:3000/api/create
-
+POST localhost:3000/api/segments
 ```json:
 {
     "segments":[
@@ -24,4 +23,38 @@ POST localhost:3000/api/create
     ]
 }
 
+```
+
+## Создание пользователей
+
+Пример:
+
+POST  localhost:3000/api/users
+
+```json:
+{
+    "users":[
+        32,
+        64, 
+        128, 
+        128
+    ]
+}
+```
+
+## Добавление пользователя в сегменты 
+
+Пример:
+
+POST localhost:3000/api/users
+
+```json
+{
+    "id": 1001,
+    "add":[
+        "AVITO_VOICE_MESSAGES",
+        "AVITO_PERFORMANCE_VAS"
+    ],
+    "delete":[]
+}
 ```

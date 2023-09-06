@@ -1,7 +1,9 @@
+.PHONY: all build clean
+
 all: build
 
 build: 
-	go build -v ./cmd/user-segments
+	go build -o ./build/user-sergments ./cmd/user-segments/main.go
 
 clean:
 	rm user-segments

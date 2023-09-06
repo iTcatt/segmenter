@@ -18,17 +18,17 @@ type PostgresStorage struct {
 const (
 	createUsersSQL   = "create table if not exists users(user_id int primary key);"
 	createSegmentSQL = `
-create table if not exists segment(
-	segment_id serial primary key,
-	segment_name text not null
-);`
+		create table if not exists segment(
+			segment_id serial primary key,
+			segment_name text not null
+		);`
 	createUserSegmentSQL = `
-create table if not exists usersegment(
-	user_id int,
-	segment_id int,
-	foreign key (user_id) references users (user_id),
-	foreign key (segment_id) references segment (segment_id)
-);`
+		create table if not exists usersegment(
+			user_id int,
+			segment_id int,
+			foreign key (user_id) references users (user_id),
+			foreign key (segment_id) references segment (segment_id)
+		);`
 )
 
 func NewPostgresStorage() (*PostgresStorage, error) {
@@ -73,12 +73,12 @@ func (ps *PostgresStorage) CreateSegment(name string) error {
 	requestSQL := "SELECT segment_name FROM segment WHERE segment_name = $1;"
 	row := ps.conn.QueryRow(context.Background(), requestSQL, name)
 
-	var result string
-	err := row.Scan(&result)
+	var temp string
+	err := row.Scan(&temp)
 	if err == nil {
 		return storage.ErrAlreadyExist
 	}
-	
+
 	insertSQL := "insert into segment(segment_name) values($1);"
 	_, err = ps.conn.Exec(context.Background(), insertSQL, name)
 	if err != nil {
@@ -91,8 +91,25 @@ func (ps *PostgresStorage) DeleteSegment(name string) error {
 	return nil
 }
 
-func (ps *PostgresStorage) AddUser(id int, addedSegments []string, removedSegments []string) error {
+func (ps *PostgresStorage) AddUser(id int) error {
+	requestSQL := "select user_id from users where user_id = $1"
+	row := ps.conn.QueryRow(context.Background(), requestSQL, id)
+	var temp string
+	err := row.Scan(&temp)
+	// ecли пользователь есть в базе 
+	if err == nil {
+		return storage.ErrAlreadyExist
+	}
 
+	insertSQL := "insert into users(user_id) values($1)"
+	_, err = ps.conn.Exec(context.Background(), insertSQL, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ps *PostgresStorage) UpdateUser(id int, addedSegments []string, removedSegments []string) error {
 	return nil
 }
 

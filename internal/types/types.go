@@ -5,8 +5,12 @@ type User struct {
 	Segments []string
 }
 
-type CreateRequest struct {
+type CreateSegmentsRequest struct {
 	Segments []string `json: segments`
+}
+
+type CreateUsersRequest struct {
+	Users []int `json: users`
 }
 
 type UpdateUser struct {
