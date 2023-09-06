@@ -13,7 +13,7 @@ make
 Пример:
 
 POST localhost:3000/api/segments
-```json:
+```json
 {
     "segments":[
         "AVITO_VOICE_MESSAGES",
@@ -31,7 +31,7 @@ POST localhost:3000/api/segments
 
 POST  localhost:3000/api/users
 
-```json:
+```json
 {
     "users":[
         32,
@@ -46,7 +46,7 @@ POST  localhost:3000/api/users
 
 Пример:
 
-POST localhost:3000/api/users
+POST localhost:3000/api/update
 
 ```json
 {
