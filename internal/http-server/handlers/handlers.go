@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/iTcatt/avito-task/internal/storage"
 	"github.com/iTcatt/avito-task/internal/types"
@@ -96,7 +97,7 @@ func CreateUsersHandler(s storage.Storage) http.HandlerFunc {
 }
 
 func UpdateUserHandler(s storage.Storage) http.HandlerFunc {
-	op := "UpdateUserHandler"
+	op := "UpdateUserHandler:"
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -130,5 +131,40 @@ func UpdateUserHandler(s storage.Storage) http.HandlerFunc {
 			}
 		}
 		
+	}
+}
+
+func GetUserSegmentsHandler(s storage.Storage) http.HandlerFunc {
+	op := "GetUserSegmentsHandler:"
+	return func(w http.ResponseWriter, r *http.Request) {
+		user_id, err := strconv.Atoi(r.URL.Query().Get("user_id"))
+		if err != nil {
+			log.Fatalf("%s invalid query param", op)
+		}
+		log.Printf("Return the names of the segments that the user '%d' is a member of", user_id)
+		strct, err := s.GetUserSegments(user_id)
+		switch err {
+		case storage.ErrNotExist:
+			log.Printf("NOTEXIST: user '%d' is not contained in any segment", user_id)
+		case nil:
+			log.Printf("SUCСESS: user '%d' is in the segments: '%v'", user_id, strct.Segments)
+		default:
+			log.Printf("ERROR: user '%d' segment data cannot be retrieved: %v", user_id, err)
+		}
+		resp, err := json.Marshal(strct)
+		if err != nil {
+			log.Printf("%s json marshal %v\n", op, err)
+		}
+		_, err = w.Write(resp)
+		if err != nil {
+			log.Printf("%s write reply %v\n", op, err)
+		}
+	}
+}
+
+func DeleteSegmentHandler(s storage.Storage) http.HandlerFunc {
+	op := "DeletesegmentHandler:"
+	return func(w http.ResponseWriter, r *http.Request) {
+		_ = op
 	}
 }

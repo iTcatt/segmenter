@@ -1,5 +1,9 @@
 # avito-task
 
+`Роутер - chi`
+
+`СУБД - PostgresSQL`
+
 # Запуск
 make
 
@@ -7,12 +11,12 @@ make
 
 # Формат запросов 
 
-Запросы выполнял с помощью PostMan
+Запросы выполнял с помощью Postman
 ## Создание сегментов 
 
 Пример:
 
-POST localhost:3000/api/segments
+`POST localhost:3000/api/segments`
 ```json
 {
     "segments":[
@@ -29,7 +33,7 @@ POST localhost:3000/api/segments
 
 Пример:
 
-POST  localhost:3000/api/users
+`POST localhost:3000/api/users`
 
 ```json
 {
@@ -46,7 +50,7 @@ POST  localhost:3000/api/users
 
 Пример:
 
-POST localhost:3000/api/update
+`POST localhost:3000/api/update`
 
 ```json
 {
@@ -58,3 +62,11 @@ POST localhost:3000/api/update
     "delete":[]
 }
 ```
+
+## Получение сегментов пользователя
+
+user_id передавать как параметры запроса
+
+Пример: 
+
+`GET localhost:3000/api/segments?user_id=1001`

@@ -1,8 +1,8 @@
 package types
 
 type User struct {
-	Id       int
-	Segments []string
+	Id       int      `json: id`
+	Segments []string `json: segments`
 }
 
 type CreateSegmentsRequest struct {
