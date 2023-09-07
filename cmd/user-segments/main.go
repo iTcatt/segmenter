@@ -25,6 +25,7 @@ func main() {
 
 	router.Post("/api/segments", handlers.CreateSegmentsHandler(db))
 	router.Post("/api/users", handlers.CreateUsersHandler(db))
-
+	router.Post("/api/update", handlers.UpdateUserHandler(db))
 	log.Fatal(http.ListenAndServe(":3000", router))
 }
+
