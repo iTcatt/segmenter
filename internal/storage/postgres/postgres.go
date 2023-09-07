@@ -33,7 +33,7 @@ const (
 	joinUsersAndSegmentSQL = `
 		select us.user_id, s.segment_id from usersegment us
 			join segment s on us.segment_id = s.segment_id
-   			where s.segment_name = $1 and us.user_id = $2;`
+   			where us.user_id = $1 and s.segment_name = $2;`
 )
 
 func NewPostgresStorage() (*PostgresStorage, error) {
@@ -114,12 +114,9 @@ func (ps *PostgresStorage) AddUser(id int) error {
 }
 
 func (ps *PostgresStorage) AddUserToSegment(id int, segment string) error {
-	var (
-		temp_user_id    int
-		temp_segment_id int
-	)
+	var temp_user_id, temp_segment_id int
 
-	row := ps.conn.QueryRow(context.Background(), joinUsersAndSegmentSQL, segment, id)
+	row := ps.conn.QueryRow(context.Background(), joinUsersAndSegmentSQL, id, segment)
 	err := row.Scan(&temp_user_id, &temp_segment_id)
 	if err == nil {
 		return storage.ErrAlreadyExist
@@ -142,36 +139,22 @@ func (ps *PostgresStorage) AddUserToSegment(id int, segment string) error {
 }
 
 func (ps *PostgresStorage) DeleteUserFromSegment(id int, segment string) error {
+	var user_id, segment_id int
+	
+	row := ps.conn.QueryRow(context.Background(), joinUsersAndSegmentSQL, id, segment)
+	err := row.Scan(&user_id, &segment_id)
+	if err != nil {
+		return storage.ErrNotExist
+	}
+
+	deleteSQL := "delete from usersegment us where us.user_id = $1 and us.segment_id = $2"
+	_, err = ps.conn.Exec(context.Background(), deleteSQL, user_id, segment_id)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
-
-// func (ps *PostgresStorage) UpdateUser(id int, addedSegments []string, removedSegments []string) error {
-
-	
-// 	for _, addSegment := range addedSegments {
-// 		row := ps.conn.QueryRow(context.Background(), joinUsersAndSegmentSQL, addSegment, id)
-// 		err := row.Scan(&temp_user_id, &temp_segment_id)
-// 		if err == nil {
-// 			return storage.ErrAlreadyExist
-// 		}
-// 		// получаю segment_id по названию сегмента
-// 		row = ps.conn.QueryRow(context.Background(), "select segment_id from segment where segment_name = $1;", addSegment)
-// 		var segment_id int
-// 		err = row.Scan(&segment_id)
-// 		if err != nil {
-// 			return storage.ErrNotExist
-// 		}
-
-// 		insertSQL := "insert into usersegment(user_id, segment_id) values($1, $2);"
-
-// 		_, err = ps.conn.Exec(context.Background(), insertSQL, id, segment_id)
-// 		if err != nil {
-// 			return err
-// 		}
-// 	}
-
-// 	return nil
-// }
 
 func (ps *PostgresStorage) GetUserSegments(id int) (types.User, error) {
 	return types.User{}, nil
