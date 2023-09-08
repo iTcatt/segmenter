@@ -24,7 +24,7 @@ func CreateSegmentsHandler(s storage.Storage) http.HandlerFunc {
 		if err != nil {
 			log.Printf("%s unmarshal json %v", op, err)
 		}
-		log.Printf("Request: %v", req)
+		log.Printf("%s request %v", op, req)
 
 		reply := make(map[string]string)
 
@@ -44,54 +44,56 @@ func CreateSegmentsHandler(s storage.Storage) http.HandlerFunc {
 				log.Printf("ERROR: create segment '%s' failed: %v\n", segment, err)
 			}
 		}
-		resp, err := json.Marshal(reply)
+
+		w.Header().Set("Content-Type", "application/json")
+		err = json.NewEncoder(w).Encode(reply)
 		if err != nil {
-			log.Printf("%s Responce not json %v", op, err)
-		}
-		_, err = w.Write(resp)
-		if err != nil {
-			log.Printf("%s Responce not write %v", op, err)
+			log.Printf("%s encode error: %v", op, err)
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			log.Printf("%s sending reply: %v", op, reply)
+			w.WriteHeader(http.StatusOK)
 		}
 	}
 }
 
 func CreateUsersHandler(s storage.Storage) http.HandlerFunc {
 	op := "CreateUsersHandle:"
-	_ = op
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			log.Fatalf("%s: ReadAll %v", op, err)
 		}
-		
+
 		var req types.CreateUsersRequest
 		json.Unmarshal(body, &req)
-		log.Printf("Request: %v", req)
+		log.Printf("Create users request: %v", req)
 		reply := make(map[int]string)
-		for _, user_id := range req.Users {
-			err := s.AddUser(user_id)
+		for _, userID := range req.Users {
+			err := s.AddUser(userID)
 			switch err {
 			case storage.ErrAlreadyExist:
-				if _, ok := reply[user_id]; !ok {
-					reply[user_id] = "already exist"
+				if _, ok := reply[userID]; !ok {
+					reply[userID] = "already exist"
 				}
-				log.Printf("EXIST: user '%d' already exist", user_id)
+				log.Printf("EXIST: user '%d' already exist", userID)
 			case nil:
-				reply[user_id] = "created"
-				log.Printf("SUCCESS: user '%d' was created", user_id)
+				reply[userID] = "created"
+				log.Printf("SUCCESS: user '%d' was created", userID)
 			default:
-				reply[user_id] = "not created"
-				log.Printf("ERROR: create user '%d' failed: %v", user_id, err)
+				reply[userID] = "not created"
+				log.Printf("ERROR: create user '%d' failed: %v", userID, err)
 			}
 		}
 
-		resp, err := json.Marshal(reply)
+		w.Header().Set("Content-Type", "application/json")
+		err = json.NewEncoder(w).Encode(reply)
 		if err != nil {
-			log.Printf("%s Responce not json %v", op, err)
-		}
-		_, err = w.Write(resp)
-		if err != nil {
-			log.Printf("%s Responce not write %v", op, err)
+			log.Printf("%s encode error: %v", op, err)
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			log.Printf("%s sending reply %v", op, reply)
+			w.WriteHeader(http.StatusOK)
 		}
 	}
 }
@@ -130,41 +132,58 @@ func UpdateUserHandler(s storage.Storage) http.HandlerFunc {
 				log.Printf("ERROR: user '%d' is not removed from the segment: %v", req.Id, err)
 			}
 		}
-		
+
 	}
 }
 
 func GetUserSegmentsHandler(s storage.Storage) http.HandlerFunc {
 	op := "GetUserSegmentsHandler:"
 	return func(w http.ResponseWriter, r *http.Request) {
-		user_id, err := strconv.Atoi(r.URL.Query().Get("user_id"))
+		userID, err := strconv.Atoi(r.URL.Query().Get("user_id"))
 		if err != nil {
 			log.Fatalf("%s invalid query param", op)
 		}
-		log.Printf("Return the names of the segments that the user '%d' is a member of", user_id)
-		strct, err := s.GetUserSegments(user_id)
+		log.Printf("Return the names of the segments that the user '%d' is a member of", userID)
+		w.Header().Set("Content-Type", "application/json")
+
+		user, err := s.GetUserSegments(userID)
 		switch err {
 		case storage.ErrNotExist:
-			log.Printf("NOTEXIST: user '%d' is not contained in any segment", user_id)
+			log.Printf("NOTEXIST: user '%d' is not contained in any segment", userID)
+			w.WriteHeader(http.StatusNotFound)
 		case nil:
-			log.Printf("SUCСESS: user '%d' is in the segments: '%v'", user_id, strct.Segments)
+			log.Printf("SUCСESS: user '%d' is in the segments: '%v'", userID, user.Segments)
+			w.WriteHeader(http.StatusOK)
 		default:
-			log.Printf("ERROR: user '%d' segment data cannot be retrieved: %v", user_id, err)
+			log.Printf("ERROR: user '%d' segment data cannot be retrieved: %v", userID, err)
+			w.WriteHeader(http.StatusInternalServerError)
 		}
-		resp, err := json.Marshal(strct)
+
+		err = json.NewEncoder(w).Encode(user)
 		if err != nil {
-			log.Printf("%s json marshal %v\n", op, err)
-		}
-		_, err = w.Write(resp)
-		if err != nil {
-			log.Printf("%s write reply %v\n", op, err)
+			log.Printf("%s encode error: %v", op, err)
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			log.Printf("%s sending reply %v", op, user)
+			w.WriteHeader(http.StatusOK)
 		}
 	}
 }
 
 func DeleteSegmentHandler(s storage.Storage) http.HandlerFunc {
-	op := "DeletesegmentHandler:"
 	return func(w http.ResponseWriter, r *http.Request) {
-		_ = op
+		segment := r.URL.Query().Get("name")
+		err := s.DeleteSegment(segment)
+		switch err {
+		case storage.ErrNotExist:
+			log.Printf("NOTEXIST: segment '%s' has not been created", segment)
+			w.WriteHeader(http.StatusNotFound)
+		case nil:
+			log.Printf("SUCCESS: segment '%s' successfully deleted", segment)
+			w.WriteHeader(http.StatusOK)
+		default:
+			log.Printf("ERROR: segment '%s' has not been deleted: %v", segment, err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 	}
 }
