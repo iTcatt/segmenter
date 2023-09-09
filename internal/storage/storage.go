@@ -10,6 +10,7 @@ type Storage interface {
 	CreateSegment(name string) error
 	DeleteSegment(name string) error
 	AddUser(id int) error
+	DeleteUser(id int) error
 	AddUserToSegment(id int, segment string) error
 	DeleteUserFromSegment(id int, segment string) error
 	GetUserSegments(id int) (types.User, error)

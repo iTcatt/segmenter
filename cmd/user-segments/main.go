@@ -24,11 +24,12 @@ func main() {
 	router.Use(middleware.Logger)
 
 	router.Post("/api/segments", handlers.CreateSegmentsHandler(db))
-	router.Post("/api/users", handlers.CreateUsersHandler(db))
-	router.Post("/api/update", handlers.UpdateUserHandler(db))
-	router.Get("/api/segments", handlers.GetUserSegmentsHandler(db))
 	router.Delete("/api/segments", handlers.DeleteSegmentHandler(db))
-
+	router.Get("/api/segments", handlers.GetUserSegmentsHandler(db))
+	router.Post("/api/users", handlers.CreateUsersHandler(db))
+	router.Delete("/api/users", handlers.DeleteUserHandler(db))
+	router.Post("/api/update", handlers.UpdateUserHandler(db))
+	
 	log.Fatal(http.ListenAndServe(":3000", router))
 }
 

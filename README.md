@@ -69,7 +69,14 @@ make
 
 `GET localhost:3000/api/segments?user_id=1001`
 
-## Удаление сегментов 
+## Удаление сегмента 
+
+Пример:
 
 `DELETE localhost:3000/api/segments?name=AVITO_VOICE_MESSAGES`
 
+## Удаление пользователя 
+
+Пример:
+
+`DELETE localhost:3000/api/users?id=1001`

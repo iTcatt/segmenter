@@ -16,18 +16,21 @@ func CreateSegmentsHandler(s storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Fatalf("%s: ReadAll %v", op, err)
+			log.Printf("%s: ReadAll %v", op, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 
 		var req types.CreateSegmentsRequest
 		err = json.Unmarshal(body, &req)
 		if err != nil {
 			log.Printf("%s unmarshal json %v", op, err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 		log.Printf("%s request %v", op, req)
 
 		reply := make(map[string]string)
-
 		for _, segment := range req.Segments {
 			err := s.CreateSegment(segment)
 			switch err {
@@ -62,12 +65,20 @@ func CreateUsersHandler(s storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Fatalf("%s: ReadAll %v", op, err)
+			log.Printf("%s: ReadAll %v", op, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 
 		var req types.CreateUsersRequest
-		json.Unmarshal(body, &req)
+		err = json.Unmarshal(body, &req)
+		if err != nil {
+			log.Printf("%s unmarshal json %v", op, err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 		log.Printf("Create users request: %v", req)
+
 		reply := make(map[int]string)
 		for _, userID := range req.Users {
 			err := s.AddUser(userID)
@@ -103,11 +114,20 @@ func UpdateUserHandler(s storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Fatalf("%s: ReadAll %v", op, err)
+			log.Printf("%s: ReadAll %v", op, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
+
 		var req types.UpdateUser
-		json.Unmarshal(body, &req)
+		err = json.Unmarshal(body, &req)
+		if err != nil {
+			log.Printf("%s unmarshal json %v", op, err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 		log.Printf("Request: %v", req)
+
 		// reply := make(map[int]string)
 		for _, segment := range req.Add {
 			err = s.AddUserToSegment(req.Id, segment)
@@ -141,9 +161,12 @@ func GetUserSegmentsHandler(s storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := strconv.Atoi(r.URL.Query().Get("user_id"))
 		if err != nil {
-			log.Fatalf("%s invalid query param", op)
+			log.Printf("%s invalid query param %v", op, err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
-		log.Printf("Return the names of the segments that the user '%d' is a member of", userID)
+
+		log.Printf("%s received user_id '%d'", op, userID)
 		w.Header().Set("Content-Type", "application/json")
 
 		user, err := s.GetUserSegments(userID)
@@ -183,6 +206,30 @@ func DeleteSegmentHandler(s storage.Storage) http.HandlerFunc {
 			w.WriteHeader(http.StatusOK)
 		default:
 			log.Printf("ERROR: segment '%s' has not been deleted: %v", segment, err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}
+}
+
+func DeleteUserHandler(s storage.Storage) http.HandlerFunc {
+	op := "DeleteUserHandler:"
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, err := strconv.Atoi(r.URL.Query().Get("id"))
+		if err != nil {
+			log.Printf("%s invalid query param %v", op, err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		err = s.DeleteUser(userID)
+		switch err {
+		case storage.ErrNotExist:
+			log.Printf("NOTEXIST: user '%d' has not been created", userID)
+			w.WriteHeader(http.StatusNotFound)
+		case nil:
+			log.Printf("SUCCESS: user '%d' successfully deleted", userID)
+			w.WriteHeader(http.StatusOK)
+		default:
+			log.Printf("ERROR: user '%d' has not been deleted: %v", userID, err)
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 	}
