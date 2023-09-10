@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/iTcatt/avito-task/internal/storage"
 	"github.com/iTcatt/avito-task/internal/types"
@@ -36,8 +35,8 @@ const (
    			where us.user_id = $1 and s.segment_name = $2;`
 )
 
-func NewPostgresStorage() (*PostgresStorage, error) {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+func NewPostgresStorage(dbPath string) (*PostgresStorage, error) {
+	conn, err := pgx.Connect(context.Background(), dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to database: %w", err)
 	}
@@ -51,7 +50,7 @@ func NewPostgresStorage() (*PostgresStorage, error) {
 	return &PostgresStorage{conn: conn}, nil
 }
 
-// create tables: user, segment, usersegment
+// StartUp create tables: users, segment, usersegment
 func (ps *PostgresStorage) StartUp() error {
 	_, err := ps.conn.Exec(context.Background(), createUsersSQL)
 	if err != nil {
@@ -142,7 +141,7 @@ func (ps *PostgresStorage) DeleteUser(id int) error {
 	if err != nil {
 		return err
 	}
-	
+
 	_, err = ps.conn.Exec(context.Background(), "delete from users where user_id = $1", id)
 	if err != nil {
 		return err
@@ -214,6 +213,7 @@ func (ps *PostgresStorage) GetUserSegments(id int) (types.User, error) {
 		}
 		result.Segments = append(result.Segments, segmentName)
 	}
+
 	if result.Segments == nil {
 		return result, storage.ErrNotExist
 	}

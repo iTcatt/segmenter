@@ -5,9 +5,14 @@
 `СУБД - PostgresSQL`
 
 # Запуск
+
+В файле ./config/local.yaml установить нужные значения или оставить их по умолчанию.
+
+```bash
 make
 
-./build/user-segments
+./build/user-segments CONFIG_PATH=./config/local.yaml
+```
 
 # Формат запросов 
 
@@ -26,7 +31,6 @@ make
         "AVITO_DISCOUNT_50"
     ]
 }
-
 ```
 
 ## Создание пользователей

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -131,10 +132,10 @@ func UpdateUserHandler(s storage.Storage) http.HandlerFunc {
 		// reply := make(map[int]string)
 		for _, segment := range req.Add {
 			err = s.AddUserToSegment(req.Id, segment)
-			switch err {
-			case storage.ErrAlreadyExist:
+			switch {
+			case errors.Is(err, storage.ErrAlreadyExist):
 				log.Printf("EXIST: user '%d' is already in the segment '%s'", req.Id, segment)
-			case nil:
+			case err == nil:
 				log.Printf("SUCСESS: user '%d' has been added to the segment '%s'", req.Id, segment)
 			default:
 				log.Printf("ERROR: user '%d' is not added to the segment: %v", req.Id, err)
@@ -143,10 +144,10 @@ func UpdateUserHandler(s storage.Storage) http.HandlerFunc {
 
 		for _, segment := range req.Delete {
 			err = s.DeleteUserFromSegment(req.Id, segment)
-			switch err {
-			case storage.ErrNotExist:
+			switch {
+			case errors.Is(err, storage.ErrNotExist):
 				log.Printf("NOTEXIST: user '%d' is not a member of the segment '%s'", req.Id, segment)
-			case nil:
+			case err == nil:
 				log.Printf("SUCСESS: user '%d' has been removed from the segment '%s'", req.Id, segment)
 			default:
 				log.Printf("ERROR: user '%d' is not removed from the segment: %v", req.Id, err)
@@ -170,11 +171,11 @@ func GetUserSegmentsHandler(s storage.Storage) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 
 		user, err := s.GetUserSegments(userID)
-		switch err {
-		case storage.ErrNotExist:
+		switch {
+		case errors.Is(err, storage.ErrNotExist):
 			log.Printf("NOTEXIST: user '%d' is not contained in any segment", userID)
 			w.WriteHeader(http.StatusNotFound)
-		case nil:
+		case err == nil:
 			log.Printf("SUCСESS: user '%d' is in the segments: '%v'", userID, user.Segments)
 			w.WriteHeader(http.StatusOK)
 		default:
@@ -188,7 +189,6 @@ func GetUserSegmentsHandler(s storage.Storage) http.HandlerFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 		} else {
 			log.Printf("%s sending reply %v", op, user)
-			w.WriteHeader(http.StatusOK)
 		}
 	}
 }
@@ -197,11 +197,11 @@ func DeleteSegmentHandler(s storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		segment := r.URL.Query().Get("name")
 		err := s.DeleteSegment(segment)
-		switch err {
-		case storage.ErrNotExist:
+		switch {
+		case errors.Is(err, storage.ErrNotExist):
 			log.Printf("NOTEXIST: segment '%s' has not been created", segment)
 			w.WriteHeader(http.StatusNotFound)
-		case nil:
+		case err == nil:
 			log.Printf("SUCCESS: segment '%s' successfully deleted", segment)
 			w.WriteHeader(http.StatusOK)
 		default:
@@ -221,11 +221,11 @@ func DeleteUserHandler(s storage.Storage) http.HandlerFunc {
 			return
 		}
 		err = s.DeleteUser(userID)
-		switch err {
-		case storage.ErrNotExist:
+		switch {
+		case errors.Is(err, storage.ErrNotExist):
 			log.Printf("NOTEXIST: user '%d' has not been created", userID)
 			w.WriteHeader(http.StatusNotFound)
-		case nil:
+		case err == nil:
 			log.Printf("SUCCESS: user '%d' successfully deleted", userID)
 			w.WriteHeader(http.StatusOK)
 		default:

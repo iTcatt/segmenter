@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"github.com/iTcatt/avito-task/internal/config"
 	"log"
 	"net/http"
 
@@ -11,13 +13,17 @@ import (
 )
 
 func main() {
-	db, err := postgres.NewPostgresStorage()
+	cfg := config.MustLoad()
+	dbPath := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		cfg.Storage.Host, cfg.Storage.Port, cfg.Storage.User, cfg.Storage.Password, cfg.Storage.Name)
+
+	db, err := postgres.NewPostgresStorage(dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	err = db.StartUp()
 	if err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 
 	router := chi.NewRouter()
@@ -29,7 +35,7 @@ func main() {
 	router.Post("/api/users", handlers.CreateUsersHandler(db))
 	router.Delete("/api/users", handlers.DeleteUserHandler(db))
 	router.Post("/api/update", handlers.UpdateUserHandler(db))
-	
-	log.Fatal(http.ListenAndServe(":3000", router))
-}
 
+	address := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
+	log.Fatal(http.ListenAndServe(address, router))
+}
