@@ -1,15 +1,10 @@
-package types
+package requests
 
-type User struct {
-	Id       int      `json:"id"`
+type CreateSegments struct {
 	Segments []string `json:"segments"`
 }
 
-type CreateSegmentsRequest struct {
-	Segments []string `json:"segments"`
-}
-
-type CreateUsersRequest struct {
+type CreateUsers struct {
 	Users []int `json:"users"`
 }
 

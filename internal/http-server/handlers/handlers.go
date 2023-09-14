@@ -3,13 +3,14 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"github.com/iTcatt/avito-task/internal/http-server/requests"
 	"io"
 	"log"
 	"net/http"
 	"strconv"
 
+	"github.com/iTcatt/avito-task/internal/http-server/replies"
 	"github.com/iTcatt/avito-task/internal/storage"
-	"github.com/iTcatt/avito-task/internal/types"
 )
 
 func CreateSegmentsHandler(s storage.Storage) http.HandlerFunc {
@@ -22,7 +23,7 @@ func CreateSegmentsHandler(s storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		var req types.CreateSegmentsRequest
+		var req requests.CreateSegments
 		err = json.Unmarshal(body, &req)
 		if err != nil {
 			log.Printf("%s unmarshal json %v", op, err)
@@ -34,13 +35,13 @@ func CreateSegmentsHandler(s storage.Storage) http.HandlerFunc {
 		reply := make(map[string]string)
 		for _, segment := range req.Segments {
 			err := s.CreateSegment(segment)
-			switch err {
-			case storage.ErrAlreadyExist:
+			switch {
+			case errors.Is(err, storage.ErrAlreadyExist):
 				if _, ok := reply[segment]; !ok {
 					reply[segment] = "already exist"
 				}
 				log.Printf("EXIST: segment '%s' already exist", segment)
-			case nil:
+			case err == nil:
 				reply[segment] = "created"
 				log.Printf("SUCCESS: segment '%s' was created", segment)
 			default:
@@ -71,7 +72,7 @@ func CreateUsersHandler(s storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		var req types.CreateUsersRequest
+		var req requests.CreateUsers
 		err = json.Unmarshal(body, &req)
 		if err != nil {
 			log.Printf("%s unmarshal json %v", op, err)
@@ -83,13 +84,13 @@ func CreateUsersHandler(s storage.Storage) http.HandlerFunc {
 		reply := make(map[int]string)
 		for _, userID := range req.Users {
 			err := s.AddUser(userID)
-			switch err {
-			case storage.ErrAlreadyExist:
+			switch {
+			case errors.Is(err, storage.ErrAlreadyExist):
 				if _, ok := reply[userID]; !ok {
 					reply[userID] = "already exist"
 				}
 				log.Printf("EXIST: user '%d' already exist", userID)
-			case nil:
+			case err == nil:
 				reply[userID] = "created"
 				log.Printf("SUCCESS: user '%d' was created", userID)
 			default:
@@ -120,7 +121,7 @@ func UpdateUserHandler(s storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		var req types.UpdateUser
+		var req requests.UpdateUser
 		err = json.Unmarshal(body, &req)
 		if err != nil {
 			log.Printf("%s unmarshal json %v", op, err)
@@ -128,18 +129,48 @@ func UpdateUserHandler(s storage.Storage) http.HandlerFunc {
 			return
 		}
 		log.Printf("Request: %v", req)
+		w.Header().Set("Content-Type", "application/json")
 
-		// reply := make(map[int]string)
+		isUserCreate := true
+		reply := replies.UpdateUser{
+			ID:     req.Id,
+			Add:    make(map[string]string, len(req.Add)),
+			Delete: make(map[string]string, len(req.Delete)),
+		}
+
 		for _, segment := range req.Add {
 			err = s.AddUserToSegment(req.Id, segment)
 			switch {
 			case errors.Is(err, storage.ErrAlreadyExist):
 				log.Printf("EXIST: user '%d' is already in the segment '%s'", req.Id, segment)
+				reply.Add[segment] = "already exist"
+			case errors.Is(err, storage.ErrNotCreated):
+				log.Printf("NOTCREATED: segment '%s' is not created", segment)
+				reply.Add[segment] = "not created"
 			case err == nil:
 				log.Printf("SUCСESS: user '%d' has been added to the segment '%s'", req.Id, segment)
+				reply.Add[segment] = "added"
+			case errors.Is(err, storage.ErrNotExist):
+				isUserCreate = false
+				break
 			default:
 				log.Printf("ERROR: user '%d' is not added to the segment: %v", req.Id, err)
+				reply.Add[segment] = "error"
 			}
+		}
+
+		if !isUserCreate {
+			reply.ID = -1
+			err := json.NewEncoder(w).Encode(reply)
+			log.Printf("%s user '%d' not created", op, req.Id)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				log.Printf("%s encode error %v", op, err)
+			} else {
+				w.WriteHeader(http.StatusBadRequest)
+				log.Printf("%s sending reply %v", op, reply)
+			}
+			return
 		}
 
 		for _, segment := range req.Delete {
@@ -147,11 +178,26 @@ func UpdateUserHandler(s storage.Storage) http.HandlerFunc {
 			switch {
 			case errors.Is(err, storage.ErrNotExist):
 				log.Printf("NOTEXIST: user '%d' is not a member of the segment '%s'", req.Id, segment)
+				reply.Delete[segment] = "not exist"
+			case errors.Is(err, storage.ErrNotCreated):
+				log.Printf("NOTCREATED: segment '%s' is not created", segment)
+				reply.Delete[segment] = "not created"
 			case err == nil:
 				log.Printf("SUCСESS: user '%d' has been removed from the segment '%s'", req.Id, segment)
+				reply.Delete[segment] = "removed"
 			default:
 				log.Printf("ERROR: user '%d' is not removed from the segment: %v", req.Id, err)
+				reply.Delete[segment] = "error"
 			}
+		}
+
+		err = json.NewEncoder(w).Encode(reply)
+		if err != nil {
+			log.Printf("%s encode error: %v", op, err)
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			log.Printf("%s sending reply %v", op, reply)
+			w.WriteHeader(http.StatusOK)
 		}
 
 	}
