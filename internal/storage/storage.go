@@ -2,8 +2,7 @@ package storage
 
 import (
 	"errors"
-
-	"github.com/iTcatt/avito-task/internal/types"
+	"github.com/iTcatt/avito-task/internal/http-server/replies"
 )
 
 type Storage interface {
@@ -13,8 +12,9 @@ type Storage interface {
 	DeleteUser(id int) error
 	AddUserToSegment(id int, segment string) error
 	DeleteUserFromSegment(id int, segment string) error
-	GetUserSegments(id int) (types.User, error)
+	GetUserSegments(id int) (replies.GetUser, error)
 }
 
 var ErrAlreadyExist = errors.New("already exist")
 var ErrNotExist = errors.New("not exist")
+var ErrNotCreated = errors.New("not created")
