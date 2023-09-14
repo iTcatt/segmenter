@@ -14,8 +14,8 @@ import (
 
 func main() {
 	cfg := config.MustLoad()
-	dbPath := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		cfg.Storage.Host, cfg.Storage.Port, cfg.Storage.User, cfg.Storage.Password, cfg.Storage.Name)
+	dbPath := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s",
+		cfg.Storage.Host, cfg.Storage.Port, cfg.Storage.User, cfg.Storage.Password, cfg.Storage.DBName)
 
 	db, err := postgres.NewPostgresStorage(dbPath)
 	if err != nil {
@@ -36,6 +36,5 @@ func main() {
 	router.Delete("/api/users", handlers.DeleteUserHandler(db))
 	router.Post("/api/update", handlers.UpdateUserHandler(db))
 
-	address := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
-	log.Fatal(http.ListenAndServe(address, router))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", cfg.Server.Port), router))
 }

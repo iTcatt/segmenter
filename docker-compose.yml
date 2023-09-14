@@ -1,0 +1,21 @@
+version: "3.8"
+services:
+  app:
+    container_name: app
+    build: ./
+    command: ./build/user-segments
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    environment:
+      - CONFIG_PATH=./configs/config.yaml
+  db:
+    container_name: psql
+    restart: always
+    image: "postgres:latest"
+    environment:
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5436:5432"
+

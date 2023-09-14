@@ -3,7 +3,13 @@
 all: build
 
 build: 
-	go build -o ./build/user-sergments ./cmd/user-segments/main.go
+	go build -o ./build/user-segments ./cmd/user-segments/main.go
+
+docker-build:
+	docker-compose build
+
+docker-run:
+	docker-compose up
 
 clean:
-	rm user-segments
+	rm ./build/user-segments

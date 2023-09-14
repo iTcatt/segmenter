@@ -6,12 +6,12 @@
 
 # Запуск
 
-В файле ./config/local.yaml установить нужные значения или оставить их по умолчанию.
+В файле ./configs/configs.yaml установить нужные значения или оставить их по умолчанию.
 
 ```bash
-make
+make doker-build
+make docker-run
 
-./build/user-segments CONFIG_PATH=./config/local.yaml
 ```
 
 # Формат запросов 
