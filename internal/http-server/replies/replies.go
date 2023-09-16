@@ -7,6 +7,6 @@ type UpdateUser struct {
 }
 
 type GetUser struct {
-	Id       int      `json:"id"`
+	ID       int      `json:"id"`
 	Segments []string `json:"segments"`
 }

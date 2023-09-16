@@ -220,10 +220,11 @@ func GetUserSegmentsHandler(s storage.Storage) http.HandlerFunc {
 		switch {
 		case errors.Is(err, storage.ErrNotExist):
 			log.Printf("NOTEXIST: user '%d' is not contained in any segment", userID)
+		case errors.Is(err, storage.ErrNotCreated):
+			log.Printf("NOTCREATED: user '%d' is not created", userID)
 			w.WriteHeader(http.StatusNotFound)
 		case err == nil:
 			log.Printf("SUCСESS: user '%d' is in the segments: '%v'", userID, user.Segments)
-			w.WriteHeader(http.StatusOK)
 		default:
 			log.Printf("ERROR: user '%d' segment data cannot be retrieved: %v", userID, err)
 			w.WriteHeader(http.StatusInternalServerError)

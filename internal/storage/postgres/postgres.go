@@ -204,8 +204,18 @@ func (ps *PostgresStorage) DeleteUserFromSegment(id int, segment string) error {
 }
 
 func (ps *PostgresStorage) GetUserSegments(id int) (replies.GetUser, error) {
-	var result replies.GetUser
-	result.Id = id
+	result := replies.GetUser{
+		ID:       -1,
+		Segments: nil,
+	}
+	var tempUserID int
+	row := ps.conn.QueryRow(context.Background(), "select user_id from users where user_id = $1", id)
+	err := row.Scan(&tempUserID)
+	if err != nil {
+		return result, storage.ErrNotCreated
+	}
+
+	result.ID = id
 	getSegmentsSQL := `
 		select s.segment_name from segment s
 			join usersegment us on s.segment_id = us.segment_id
