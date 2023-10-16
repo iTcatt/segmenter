@@ -3,7 +3,7 @@ services:
   app:
     container_name: app
     build: ./
-    command: ./build/user-segments
+    command: ./build/app
     ports:
       - "3000:3000"
     depends_on:
@@ -18,4 +18,3 @@ services:
       - POSTGRES_PASSWORD=postgres
     ports:
       - "5436:5432"
-
