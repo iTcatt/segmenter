@@ -27,7 +27,7 @@ func CreateSegmentsHandler(s storage.Storage) http.HandlerFunc {
 		err = json.Unmarshal(body, &req)
 		if err != nil {
 			log.Printf("%s unmarshal json %v", op, err)
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		log.Printf("%s request %v", op, req)
@@ -76,7 +76,7 @@ func CreateUsersHandler(s storage.Storage) http.HandlerFunc {
 		err = json.Unmarshal(body, &req)
 		if err != nil {
 			log.Printf("%s unmarshal json %v", op, err)
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		log.Printf("Create users request: %v", req)
@@ -125,7 +125,7 @@ func UpdateUserHandler(s storage.Storage) http.HandlerFunc {
 		err = json.Unmarshal(body, &req)
 		if err != nil {
 			log.Printf("%s unmarshal json %v", op, err)
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		log.Printf("Request: %v", req)
