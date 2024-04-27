@@ -47,9 +47,9 @@ make docker-run
 
 ```json
 {
-  "AVITO_DISCOUNT_30": "created",
-  "AVITO_PERFORMANCE_VAS": "created",
-  "AVITO_VOICE_MESSAGES": "created"
+    "AVITO_DISCOUNT_30": "created",
+    "AVITO_PERFORMANCE_VAS": "created",
+    "AVITO_VOICE_MESSAGES": "created"
 }
 ```
 
@@ -60,10 +60,10 @@ make docker-run
 ```json
 { 
     "segments":[
-      "AVITO_VOICE_MESSAGES",
-      "AVITO_DISCOUNT_30",
-      "AVITO_DISCOUNT_30",
-      "AVITO_DISCOUNT_50"
+        "AVITO_VOICE_MESSAGES",
+        "AVITO_DISCOUNT_30",
+        "AVITO_DISCOUNT_30",
+        "AVITO_DISCOUNT_50"
     ]
 }
 ```
@@ -135,35 +135,26 @@ make docker-run
 ```
     
 ## Обновление сегментов пользователя 
+ID пользователя передается как URL параметр.
+Eсли такого пользователя несуществует, вернется код ответа `404`
 
-Если такого пользователя не существует, то в json в поле id вернется -1,
-а поля add и delete будут пустыми.
+В body запроса передаются два поля: 
+1) add_segments - список названий сегментов, в которых нужно добавить пользователя
+2) delete_segments - список названий сегментов, из которых нужно удалить пользователя.
 
-Если пользователь существует, то на каждый сегмент в поле add 
-будут выведены следующие сообщения:
-* `not created` если такого сегмента не было создано
-* `added` если пользователь был добавлен в сегмент
-* `already exist` если пользователь был добавлен в сегмент ранее
-* `error` если при добавлении пользователя в сегмент возникла ошибка
-
-На каждый сегмент в поле delete будет выведены слудующие сообщения:
-* `not created` если такого сегмента не было создано
-* `removed` если пользователь был удален из сегмента
-* `not exist` если пользователь не содержится в сегменте
-* `error` если при удалении пользователя из сегмента возникла ошибка
+В ответе возвращается структура пользователя: его ID и сегменты, в которых он состоит после проведенных изменений.
 
 ### Пример запроса:
 
-`POST localhost:3000/api/update`
+`PATCH localhost:3000/api/user/32`
 
 ```json
 {
-    "id": 32,
-    "add":[
+    "add_segments":[
         "AVITO_VOICE_MESSAGES",
         "AVITO_PERFORMANCE_VAS"
     ],
-    "delete":[
+    "delete_segments":[
         "NO_SEGMENT"
     ]
 }
@@ -174,13 +165,10 @@ make docker-run
 ```json
 {
     "id": 32,
-    "add": {
-        "AVITO_PERFORMANCE_VAS": "added",
-        "AVITO_VOICE_MESSAGES": "added"
-    },
-    "delete": {
-        "NO_SEGMENT": "not created"
-    }
+    "segments": [
+        "AVITO_PERFORMANCE_VAS",
+        "AVITO_VOICE_MESSAGES"
+    ]
 }
 ```
 
@@ -201,13 +189,7 @@ make docker-run
 
 ### Ответ от сервера: 
 
-```json
-{
-    "id": -1,
-    "add": {},
-    "delete": {}
-}
-```
+Вернется код ответа `404 NotFound`
 
 ### Пример запроса:
 
@@ -215,12 +197,10 @@ make docker-run
 {
     "id": 32,
     "add":[
-        "AVITO_VOICE_MESSAGES",
         "AVITO_DISCOUNT_30"
     ],
     "delete":[
-        "AVITO_PERFORMANCE_VAS",
-        "AVITO_DISCOUNT_50"
+        "AVITO_PERFORMANCE_VAS"
     ]
 }
 ```
@@ -230,29 +210,24 @@ make docker-run
 ```json
 {
     "id": 32,
-    "add": {
-        "AVITO_DISCOUNT_30": "added",
-        "AVITO_VOICE_MESSAGES": "already exist"
-    },
-    "delete": {
-        "AVITO_DISCOUNT_50": "not exist",
-        "AVITO_PERFORMANCE_VAS": "removed"
-    }
+    "segments": [
+        "AVITO_VOICE_MESSAGES",
+        "AVITO_DISCOUNT_30"
+    ]
 }
 ```
 
 ## Получение сегментов пользователя
 
-ID пользователя передается через параметры get запроса.
+ID пользователя передается через URL параметры. 
 
-* если переданный id не число, то вернется код ответа `400`
+* если id не число, то вернется код ответа `400` и сообщение об ошибке
 * если такой пользователь существует, то вернется список его сегментов
-* если такого пользователя не существует, то в поле id вернется -1, в поле segments
-вернется null, а также код ответа будет `404`
+* если такого пользователя не существует, то вернется код ответа `404`
 
 ### Пример запроса: 
 
-`GET localhost:3000/api/segments?user_id=32`
+`GET localhost:3000/api/user/32`
 
 ### Ответ от сервера:
 ```json
@@ -267,69 +242,62 @@ ID пользователя передается через параметры g
 
 ### Пример некорректного запроса: 
 
-`GET localhost:3000/api/segments?user_id=number`
+`GET localhost:3000/api/user/number`
 
 Такой запрос вернет код ответа `400 - Bad Request`
 
 ### Пример для пользователя не входящего ни в один сегмент:
 
-`GET localhost:3000/api/segments?user_id=64`
+`GET localhost:3000/api/segments/64`
 
 ### Ответ от сервера:
 
 ```json
 {
     "id": 64,
-    "segments": null
+    "segments": []
 }
 ```
 
 ### Пример для несозданного пользователя: 
 
-`GET localhost:3000/api/segments?user_id=100000`
+`GET localhost:3000/api/user/100000`
 
 ### Ответ от сервера:
 
-```json
-{
-    "id": -1,
-    "segments": null
-}
-```
-
-Также вернется код ответа `404`
+Вернется код ответа `404`
 
 ## Удаление сегмента
 
-* если сегмент существует, то после удаления будет возвращен код ответа `200`.
+* если сегмент существует, то после удаления будет возвращен код ответа `204`
 
-* если сегмент отстутствует, то вернется код ответа `404`.
+* если сегмент отстутствует, то вернется код ответа `404`
 
 ### Пример удаления существующего сегмента:
 
-`DELETE localhost:3000/api/segments?name=AVITO_VOICE_MESSAGES`
+`DELETE localhost:3000/api/segment/AVITO_VOICE_MESSAGES`
 
-Такой запрос вернет код ответа `200`. 
+Такой запрос вернет код ответа `204`. 
 
 ### Пример удаления несозданного сегмента:
 
-`DELETE localhost:3000/api/segments?name=AVITO_VOICE_MESSAGES`
+`DELETE localhost:3000/api/segment/AVITO_VOICE_MESSAGES`
 
 Т.к. на предыдущем шаге сегмент был удален, то вернется код ответа `404`.
 
 ## Удаление пользователя 
 
-* если пользователь существует, то после удаления будет возвращен код ответа `200`.
+* если пользователь существует, то после удаления будет возвращен код ответа `204`.
 
 * если пользователь отстутствует, то вернется код ответа `404`.
 
-* если в параметрах запроса передали не число, то вернется код ответа `400`.
+* если в параметрах запроса передали не число, то вернется код ответа `400`, а также сообщение об ошибке.
 
 ### Пример успешного удаления:
 
-`DELETE localhost:3000/api/users?id=128`
+`DELETE localhost:3000/api/user/128`
 
-Такой запрос вернет код ответа `200`.
+Такой запрос вернет код ответа `204`.
 
 ### Пример удаления несозданного пользователя:
 
@@ -339,6 +307,10 @@ ID пользователя передается через параметры g
 
 ### Пример неправильного запроса:
 
-`DELETE localhost:3000/api/users?id=lol`
-
+`DELETE localhost:3000/api/user/A`
+```json
+{
+    "error": "validation error"
+}
+```
 Такой запрос вернет код ответа `400`.
