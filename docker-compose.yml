@@ -3,7 +3,7 @@ services:
   app:
     container_name: app
     build: ./
-    command: ./build/app
+    command: ./segmenter
     ports:
       - "3000:3000"
     depends_on:
@@ -11,10 +11,10 @@ services:
     environment:
       - CONFIG_PATH=./configs/config.yaml
   db:
-    container_name: psql
+    container_name: postgres
     restart: always
-    image: "postgres:latest"
+    image: "postgres:16.2"
     environment:
       - POSTGRES_PASSWORD=postgres
     ports:
-      - "5436:5432"
+      - "5439:5432"

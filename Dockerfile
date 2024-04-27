@@ -2,10 +2,10 @@ FROM golang:1.19-alpine
 
 WORKDIR /usr/src/app
 
+RUN apk --no-cache add bash make
+
 COPY go.mod go.sum ./
 RUN go mod download && go mod verify
 
 COPY ./ ./
-RUN go build -o ./build/app ./cmd/user-segments/main.go
-
-CMD ["./build/app"]
+RUN make build

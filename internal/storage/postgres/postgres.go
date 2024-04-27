@@ -3,70 +3,85 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"github.com/iTcatt/avito-task/internal/http-server/replies"
 	"log"
+	"time"
 
+	"github.com/iTcatt/avito-task/internal/config"
+	"github.com/iTcatt/avito-task/internal/models"
 	"github.com/iTcatt/avito-task/internal/storage"
+
 	"github.com/jackc/pgx/v5"
 )
 
-type PostgresStorage struct {
-	conn *pgx.Conn
-}
-
 const (
-	createUsersSQL   = "create table if not exists users(user_id int primary key);"
+	createUsersSQL   = `CREATE TABLE if NOT EXISTS users(user_id INT PRIMARY KEY);`
 	createSegmentSQL = `
-		create table if not exists segment(
-			segment_id serial primary key,
-			segment_name text not null
+		CREATE TABLE if NOT EXISTS segment(
+			segment_id serial PRIMARY KEY,
+			segment_name text NOT NULL
 		);`
 	createUserSegmentSQL = `
-		create table if not exists user_segment(
-			user_id int,
-			segment_id int,
-			foreign key (user_id) references users (user_id) on delete CASCADE ,
-			foreign key (segment_id) references segment (segment_id) on delete CASCADE
+		CREATE TABLE if NOT EXISTS user_segment(
+			user_id INT,
+			segment_id INT,
+			FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE ,
+			FOREIGN KEY (segment_id) REFERENCES segment (segment_id) ON DELETE CASCADE
 		);`
 
 	joinUsersAndSegmentSQL = `
-		select s.segment_id from user_segment us
-			join segment s on us.segment_id = s.segment_id
-   			where us.user_id = $1 and s.segment_name = $2;`
+		SELECT s.segment_id 
+		FROM user_segment us
+		JOIN segment s on us.segment_id = s.segment_id
+		WHERE us.user_id = $1 AND s.segment_name = $2;`
 )
 
-func NewPostgresStorage(dbPath string) (*PostgresStorage, error) {
-	conn, err := pgx.Connect(context.Background(), dbPath)
-	if err != nil {
-		return nil, fmt.Errorf("unable to connect to database: %w", err)
-	}
-
-	err = conn.Ping(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	log.Println("Successful database connection")
-
-	return &PostgresStorage{conn: conn}, nil
+type Storage struct {
+	conn *pgx.Conn
 }
 
-// TODO: заменить на миграции
+func NewStorage(cfg config.DatabaseConfig) (*Storage, error) {
+	dbPath := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s",
+		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName)
+
+	ticker := time.NewTicker(1 * time.Second)
+	deadline := time.After(cfg.Timeout)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			conn, err := pgx.Connect(context.Background(), dbPath)
+			if err != nil {
+				continue
+			}
+
+			if err = conn.Ping(context.Background()); err != nil {
+				continue
+			}
+
+			log.Println("Successful database connection")
+			return &Storage{conn: conn}, nil
+		case <-deadline:
+			return nil, fmt.Errorf("timed out waiting for postgres connection")
+		}
+	}
+}
 
 // StartUp create tables: users, segment, user_segment
-func (ps *PostgresStorage) StartUp() error {
-	_, err := ps.conn.Exec(context.Background(), createUsersSQL)
+func (s *Storage) StartUp() error {
+	_, err := s.conn.Exec(context.Background(), createUsersSQL)
 	if err != nil {
 		return err
 	}
 	log.Println("Table users created successfully!")
 
-	_, err = ps.conn.Exec(context.Background(), createSegmentSQL)
+	_, err = s.conn.Exec(context.Background(), createSegmentSQL)
 	if err != nil {
 		return err
 	}
 	log.Println("Table segment created successfully!")
 
-	_, err = ps.conn.Exec(context.Background(), createUserSegmentSQL)
+	_, err = s.conn.Exec(context.Background(), createUserSegmentSQL)
 	if err != nil {
 		return err
 	}
@@ -75,9 +90,9 @@ func (ps *PostgresStorage) StartUp() error {
 	return nil
 }
 
-func (ps *PostgresStorage) CreateSegment(name string) error {
-	requestSQL := "SELECT segment_name FROM segment WHERE segment_name = $1;"
-	row := ps.conn.QueryRow(context.Background(), requestSQL, name)
+func (s *Storage) CreateSegment(ctx context.Context, name string) error {
+	q := "SELECT segment_name FROM segment WHERE segment_name = $1;"
+	row := s.conn.QueryRow(ctx, q, name)
 
 	var temp string
 	err := row.Scan(&temp)
@@ -85,135 +100,110 @@ func (ps *PostgresStorage) CreateSegment(name string) error {
 		return storage.ErrAlreadyExist
 	}
 
-	insertSQL := "insert into segment(segment_name) values($1);"
-	_, err = ps.conn.Exec(context.Background(), insertSQL, name)
-	if err != nil {
+	insertSQL := "INSERT INTO segment(segment_name) VALUES($1);"
+	if _, err = s.conn.Exec(ctx, insertSQL, name); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (ps *PostgresStorage) DeleteSegment(name string) error {
-	existSQL := "select segment_id from segment where segment_name = $1"
-	var segmentID int
-	row := ps.conn.QueryRow(context.Background(), existSQL, name)
-	err := row.Scan(&segmentID)
+func (s *Storage) DeleteSegment(ctx context.Context, name string) error {
+	log.Println("[DEBUG] Delete segment:", name)
+	tag, err := s.conn.Exec(ctx, "DELETE FROM segment WHERE segment_name = $1", name)
 	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
 		return storage.ErrNotExist
 	}
-
-	_, err = ps.conn.Exec(context.Background(), "delete from segment where segment_name = $1", name)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
-func (ps *PostgresStorage) AddUser(id int) error {
+func (s *Storage) CreateUser(ctx context.Context, id int) error {
 	var tempUserID int
-	requestSQL := "select user_id from users where user_id = $1"
-	row := ps.conn.QueryRow(context.Background(), requestSQL, id)
+	requestSQL := "SELECT user_id FROM users WHERE user_id = $1"
+	row := s.conn.QueryRow(ctx, requestSQL, id)
 	err := row.Scan(&tempUserID)
 	if err == nil {
 		return storage.ErrAlreadyExist
 	}
 
-	insertSQL := "insert into users(user_id) values($1)"
-	_, err = ps.conn.Exec(context.Background(), insertSQL, id)
+	insertSQL := "INSERT INTO users(user_id) VALUES($1)"
+	_, err = s.conn.Exec(ctx, insertSQL, id)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (ps *PostgresStorage) DeleteUser(id int) error {
-	row := ps.conn.QueryRow(context.Background(), "select user_id from users where user_id = $1", id)
-	var tempUserID int
-	err := row.Scan(&tempUserID)
+func (s *Storage) DeleteUser(ctx context.Context, id int) error {
+	tag, err := s.conn.Exec(ctx, "DELETE FROM users WHERE user_id = $1", id)
 	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
 		return storage.ErrNotExist
 	}
-
-	_, err = ps.conn.Exec(context.Background(), "delete from users where user_id = $1", id)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func (ps *PostgresStorage) AddUserToSegment(id int, segment string) error {
+func (s *Storage) GetSegmentIDByName(ctx context.Context, name string) (int, error) {
+	var segmentID int
+	row := s.conn.QueryRow(ctx, `SELECT segment_id FROM segment WHERE segment_name = $1;`, name)
+	if err := row.Scan(&segmentID); err != nil {
+		return 0, storage.ErrNotCreated
+	}
+	return segmentID, nil
+}
+
+func (s *Storage) AddUserToSegment(ctx context.Context, userID, segmentID int) error {
 	var tempSegmentID, tempUserID int
-	row := ps.conn.QueryRow(context.Background(), "select user_id from users where user_id=$1", id)
-	err := row.Scan(&tempUserID)
-	if err != nil {
+	row := s.conn.QueryRow(ctx, "SELECT 1 FROM users WHERE user_id=$1", userID)
+	if err := row.Scan(&tempUserID); err != nil {
 		return storage.ErrNotExist
 	}
 
-	row = ps.conn.QueryRow(context.Background(), joinUsersAndSegmentSQL, id, segment)
-	err = row.Scan(&tempSegmentID)
-	if err == nil {
+	row = s.conn.QueryRow(ctx, joinUsersAndSegmentSQL, userID, segmentID)
+	if err := row.Scan(&tempSegmentID); err == nil {
 		return storage.ErrAlreadyExist
 	}
-	// получаю segment_id по названию сегмента
-	row = ps.conn.QueryRow(context.Background(), "select segment_id from segment where segment_name = $1;", segment)
-	var segmentID int
-	err = row.Scan(&segmentID)
-	if err != nil {
-		return storage.ErrNotCreated
-	}
 
-	insertSQL := "insert into user_segment(user_id, segment_id) values($1, $2);"
-	_, err = ps.conn.Exec(context.Background(), insertSQL, id, segmentID)
+	_, err := s.conn.Exec(ctx, "INSERT INTO user_segment(user_id, segment_id) VALUES($1, $2);", userID, segmentID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (ps *PostgresStorage) DeleteUserFromSegment(id int, segment string) error {
-	row := ps.conn.QueryRow(context.Background(), "select segment_id from segment where segment_name = $1;", segment)
-	var segmentID int
-	err := row.Scan(&segmentID)
-	if err != nil {
-		return storage.ErrNotCreated
-	}
-
-	row = ps.conn.QueryRow(context.Background(), joinUsersAndSegmentSQL, id, segment)
-	err = row.Scan(&segmentID)
-	if err != nil {
-		return storage.ErrNotExist
-	}
-
-	deleteSQL := "delete from user_segment us where us.user_id = $1 and us.segment_id = $2"
-	_, err = ps.conn.Exec(context.Background(), deleteSQL, id, segmentID)
+func (s *Storage) DeleteUserFromSegment(ctx context.Context, userID, segmentID int) error {
+	deleteSQL := "DELETE FROM user_segment us WHERE us.user_id = $1 AND us.segment_id = $2"
+	_, err := s.conn.Exec(ctx, deleteSQL, userID, segmentID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (ps *PostgresStorage) GetUserSegments(id int) (replies.GetUser, error) {
-	result := replies.GetUser{
-		ID:       -1,
-		Segments: nil,
-	}
+func (s *Storage) GetUser(ctx context.Context, id int) (models.User, error) {
 	var tempUserID int
-	row := ps.conn.QueryRow(context.Background(), "select user_id from users where user_id = $1", id)
+	row := s.conn.QueryRow(ctx, "SELECT user_id FROM users WHERE user_id = $1", id)
 	err := row.Scan(&tempUserID)
 	if err != nil {
-		return result, storage.ErrNotCreated
+		return models.User{}, storage.ErrNotCreated
 	}
-
-	result.ID = id
+	user := models.User{
+		ID:       id,
+		Segments: []string{},
+	}
 	getSegmentsSQL := `
-		select s.segment_name from segment s
-			join user_segment us on s.segment_id = us.segment_id
-			where us.user_id = $1;`
+		SELECT s.segment_name 
+		FROM segment s
+		JOIN user_segment us ON s.segment_id = us.segment_id
+		WHERE us.user_id = $1;`
 
-	rows, err := ps.conn.Query(context.Background(), getSegmentsSQL, id)
+	rows, err := s.conn.Query(ctx, getSegmentsSQL, id)
 	if err != nil {
-		return replies.GetUser{}, err
+		return models.User{}, err
 	}
 	defer rows.Close()
 
@@ -221,13 +211,10 @@ func (ps *PostgresStorage) GetUserSegments(id int) (replies.GetUser, error) {
 		var segmentName string
 		err := rows.Scan(&segmentName)
 		if err != nil {
-			return replies.GetUser{}, err
+			return models.User{}, err
 		}
-		result.Segments = append(result.Segments, segmentName)
+		user.Segments = append(user.Segments, segmentName)
 	}
 
-	if result.Segments == nil {
-		return result, storage.ErrNotExist
-	}
-	return result, nil
+	return user, nil
 }
