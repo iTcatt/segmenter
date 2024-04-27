@@ -72,13 +72,13 @@ func (s *Service) CreateUsers(ctx context.Context, users []int) (map[int]string,
 	return result, nil
 }
 
-func (s *Service) GetUserSegments(ctx context.Context, id int) ([]string, error) {
+func (s *Service) GetUser(ctx context.Context, id int) (models.User, error) {
 	user, err := s.repo.GetUser(ctx, id)
 	if err != nil {
 		log.Printf("ERROR: get user '%d': %v", id, err)
-		return nil, err
+		return models.User{}, err
 	}
-	return user.Segments, nil
+	return user, nil
 }
 
 func (s *Service) UpdateUser(ctx context.Context, params models.UpdateUserParams) (models.User, error) {

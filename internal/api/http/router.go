@@ -12,7 +12,7 @@ func NewRouter(h *Handler) http.Handler {
 
 	router.Use(middleware.Logger)
 
-	router.Get("/api/user/{id}", errorsMiddleware(h.GetUserSegments))
+	router.Get("/api/user/{id}", errorsMiddleware(h.GetUser))
 	router.Post("/api/user", errorsMiddleware(h.CreateUsers))
 	router.Post("/api/segment", errorsMiddleware(h.CreateSegments))
 	router.Patch("/api/user/{id}", errorsMiddleware(h.UpdateUser))

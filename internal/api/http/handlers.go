@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -21,7 +20,7 @@ type SegmentService interface {
 	CreateSegments(context.Context, []string) (map[string]string, error)
 	CreateUsers(context.Context, []int) (map[int]string, error)
 
-	GetUserSegments(context.Context, int) ([]string, error)
+	GetUser(context.Context, int) (models.User, error)
 
 	UpdateUser(context.Context, models.UpdateUserParams) (models.User, error)
 
@@ -89,7 +88,8 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) error {
 
 	userID, err := strconv.Atoi(id)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrValidation, err)
+		log.Printf("%v: %v", ErrValidation, err)
+		return ErrValidation
 	}
 
 	body, err := io.ReadAll(r.Body)
@@ -118,7 +118,7 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) error {
 	return sendJSONResponse(w, user, http.StatusOK)
 }
 
-func (h *Handler) GetUserSegments(w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) error {
 	op := "GetUserSegmentsHandler:"
 
 	id := chi.URLParam(r, "id")
@@ -126,15 +126,16 @@ func (h *Handler) GetUserSegments(w http.ResponseWriter, r *http.Request) error 
 
 	userID, err := strconv.Atoi(id)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrValidation, err)
+		log.Printf("%v: %v", ErrValidation, err)
+		return ErrValidation
 	}
 
-	segments, err := h.service.GetUserSegments(r.Context(), userID)
+	user, err := h.service.GetUser(r.Context(), userID)
 	if err != nil {
 		return err
 	}
 
-	return sendJSONResponse(w, segments, http.StatusOK)
+	return sendJSONResponse(w, user, http.StatusOK)
 }
 
 func (h *Handler) DeleteSegment(w http.ResponseWriter, r *http.Request) error {
@@ -159,7 +160,8 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) error {
 
 	userID, err := strconv.Atoi(id)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrValidation, err)
+		log.Printf("%v: %v", ErrValidation, err)
+		return ErrValidation
 	}
 
 	if err := h.service.DeleteUser(r.Context(), userID); err != nil {
