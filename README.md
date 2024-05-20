@@ -174,9 +174,10 @@ Eсли такого пользователя несуществует, верн
 
 ### Пример запроса:
 
+`PATCH localhost:3000/api/user/10000`
+
 ```json
 {
-    "id": 10000,
     "add":[
         "AVITO_VOICE_MESSAGES",
         "AVITO_PERFORMANCE_VAS"
@@ -193,9 +194,10 @@ Eсли такого пользователя несуществует, верн
 
 ### Пример запроса:
 
+`PATCH localhost:3000/api/user/32`
+
 ```json
 {
-    "id": 32,
     "add":[
         "AVITO_DISCOUNT_30"
     ],
