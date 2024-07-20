@@ -1,11 +1,12 @@
-package http
+package rest
 
 import (
 	"encoding/json"
 	"errors"
-	"github.com/iTcatt/avito-task/internal/storage"
 	"log"
 	"net/http"
+
+	"github.com/iTcatt/segmenter/internal/storage"
 )
 
 type wrapperHandler func(w http.ResponseWriter, r *http.Request) error

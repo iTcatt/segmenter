@@ -5,10 +5,11 @@ import (
 	"errors"
 	"log"
 
-	"github.com/iTcatt/avito-task/internal/models"
-	"github.com/iTcatt/avito-task/internal/storage"
+	"github.com/iTcatt/segmenter/internal/models"
+	"github.com/iTcatt/segmenter/internal/storage"
 )
 
+//go:generate mockery --name SegmentStorage
 type SegmentStorage interface {
 	CreateSegment(ctx context.Context, name string) error
 	CreateUser(ctx context.Context, id int) error

@@ -1,4 +1,4 @@
-package http
+package rest
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/iTcatt/avito-task/internal/models"
+	"github.com/iTcatt/segmenter/internal/models"
 )
 
 var ErrValidation = errors.New("validation error")

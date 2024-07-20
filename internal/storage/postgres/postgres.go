@@ -6,9 +6,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/iTcatt/avito-task/internal/config"
-	"github.com/iTcatt/avito-task/internal/models"
-	"github.com/iTcatt/avito-task/internal/storage"
+	"github.com/iTcatt/segmenter/internal/config"
+	"github.com/iTcatt/segmenter/internal/models"
+	"github.com/iTcatt/segmenter/internal/storage"
 
 	"github.com/jackc/pgx/v5"
 )

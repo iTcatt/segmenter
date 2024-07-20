@@ -1,13 +1,14 @@
 package main
 
 import (
-	"github.com/iTcatt/avito-task/internal/service"
 	"log"
 	"net/http"
 
-	api "github.com/iTcatt/avito-task/internal/api/http"
-	"github.com/iTcatt/avito-task/internal/config"
-	"github.com/iTcatt/avito-task/internal/storage/postgres"
+	"github.com/iTcatt/segmenter/internal/service"
+
+	"github.com/iTcatt/segmenter/internal/api/rest"
+	"github.com/iTcatt/segmenter/internal/config"
+	"github.com/iTcatt/segmenter/internal/storage/postgres"
 )
 
 func main() {
@@ -21,10 +22,10 @@ func main() {
 	}
 
 	serv := service.NewService(db)
-	handler := api.NewHandler(serv)
+	handler := rest.NewHandler(serv)
 	server := http.Server{
 		Addr:    cfg.Server.Endpoint,
-		Handler: api.NewRouter(handler),
+		Handler: rest.NewRouter(handler),
 	}
 
 	log.Fatal(server.ListenAndServe())
