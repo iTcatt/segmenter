@@ -1,4 +1,4 @@
-.PHONY: all build clean
+.PHONY: all build clean test
 
 all: build
 
@@ -13,3 +13,8 @@ docker-run:
 
 clean:
 	rm segmenter
+
+test:
+	go test -v ./... -coverprofile=coverage.out
+	go tool cover -html=coverage.out -o coverage.html
+	rm coverage.out
