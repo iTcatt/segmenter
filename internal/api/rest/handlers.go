@@ -22,7 +22,7 @@ type SegmentService interface {
 
 	GetUser(context.Context, int) (models.User, error)
 
-	UpdateUser(context.Context, models.UpdateUserParams) (models.User, error)
+	UpdateUser(context.Context, models.UpdateUserParams) error
 
 	DeleteSegment(context.Context, string) error
 	DeleteUser(context.Context, int) error
@@ -106,7 +106,7 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) error {
 	}
 	log.Printf("%s received '%v'", op, req)
 
-	user, err := h.service.UpdateUser(r.Context(), models.UpdateUserParams{
+	err = h.service.UpdateUser(r.Context(), models.UpdateUserParams{
 		ID:             userID,
 		AddSegments:    req.AddSegments,
 		DeleteSegments: req.DeleteSegments,
@@ -114,7 +114,10 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-
+	user, err := h.service.GetUser(r.Context(), userID)
+	if err != nil {
+		return err
+	}
 	return sendJSONResponse(w, user, http.StatusOK)
 }
 

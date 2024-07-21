@@ -13,14 +13,14 @@ import (
 type SegmentStorage interface {
 	CreateSegment(ctx context.Context, name string) error
 	CreateUser(ctx context.Context, id int) error
-	AddUserToSegment(ctx context.Context, userID, segmentID int) error
+	AddUserToSegment(ctx context.Context, userID int, segment string) error
 
+	IsUserCreated(ctx context.Context, userID int) (bool, error)
 	GetUser(ctx context.Context, id int) (models.User, error)
-	GetSegmentIDByName(ctx context.Context, name string) (int, error)
 
 	DeleteSegment(ctx context.Context, name string) error
 	DeleteUser(ctx context.Context, id int) error
-	DeleteUserFromSegment(ctx context.Context, userID, segmentID int) error
+	DeleteUserFromSegment(ctx context.Context, userID int, segment string) error
 }
 
 type Service struct {
@@ -82,37 +82,46 @@ func (s *Service) GetUser(ctx context.Context, id int) (models.User, error) {
 	return user, nil
 }
 
-func (s *Service) UpdateUser(ctx context.Context, params models.UpdateUserParams) (models.User, error) {
+func (s *Service) UpdateUser(ctx context.Context, params models.UpdateUserParams) error {
+	isCreated, err := s.repo.IsUserCreated(ctx, params.ID)
+	if err != nil {
+		return err
+	}
+	if !isCreated {
+		return storage.ErrNotExist
+	}
+
 	for _, segment := range params.AddSegments {
-		segmentID, err := s.repo.GetSegmentIDByName(ctx, segment)
-		if err != nil {
-			log.Printf("ERROR: get segment id failed: %v", err)
+		err = s.repo.AddUserToSegment(ctx, params.ID, segment)
+		switch {
+		case err == nil:
+			log.Printf("SUCCESS: segment '%s' was updated", segment)
+		case errors.Is(err, storage.ErrAlreadyExist):
+			log.Printf("user '%d' already exist in segment '%s'", params.ID, segment)
 			continue
-		}
-		if err := s.repo.AddUserToSegment(ctx, params.ID, segmentID); err != nil {
+		case errors.Is(err, storage.ErrNotExist):
+			log.Printf("segment '%s' not created", segment)
+			continue
+		default:
 			log.Printf("ERROR: add user segment to segment failed: %v", err)
-			return models.User{}, err
+			return err
 		}
 	}
 
 	for _, segment := range params.DeleteSegments {
-		segmentID, err := s.repo.GetSegmentIDByName(ctx, segment)
-		if err != nil {
-			log.Printf("ERROR: get segment id failed: %v", err)
+		err = s.repo.DeleteUserFromSegment(ctx, params.ID, segment)
+		switch {
+		case err == nil:
+			log.Printf("SUCCESS: user '%d' was deleted from segment '%s'", params.ID, segment)
+		case errors.Is(err, storage.ErrNotExist):
+			log.Printf("segment '%s' not created", segment)
 			continue
-		}
-		if err := s.repo.DeleteUserFromSegment(ctx, params.ID, segmentID); err != nil {
+		default:
 			log.Printf("ERROR: delete user segment from segment failed: %v", err)
-			return models.User{}, err
+			return err
 		}
 	}
-
-	user, err := s.repo.GetUser(ctx, params.ID)
-	if err != nil {
-		log.Printf("ERROR: get user '%d': %v", params.ID, err)
-		return models.User{}, err
-	}
-	return user, nil
+	return nil
 }
 
 func (s *Service) DeleteSegment(ctx context.Context, name string) error {

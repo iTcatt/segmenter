@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -91,12 +92,11 @@ func (s *Storage) StartUp() error {
 }
 
 func (s *Storage) CreateSegment(ctx context.Context, name string) error {
-	q := "SELECT segment_name FROM segment WHERE segment_name = $1;"
-	row := s.conn.QueryRow(ctx, q, name)
-
-	var temp string
-	err := row.Scan(&temp)
-	if err == nil {
+	isCreated, err := s.isSegmentCreated(ctx, name)
+	if err != nil {
+		return err
+	}
+	if isCreated {
 		return storage.ErrAlreadyExist
 	}
 
@@ -147,37 +147,33 @@ func (s *Storage) DeleteUser(ctx context.Context, id int) error {
 	return nil
 }
 
-func (s *Storage) GetSegmentIDByName(ctx context.Context, name string) (int, error) {
-	var segmentID int
-	row := s.conn.QueryRow(ctx, `SELECT segment_id FROM segment WHERE segment_name = $1;`, name)
-	if err := row.Scan(&segmentID); err != nil {
-		return 0, storage.ErrNotCreated
-	}
-	return segmentID, nil
-}
-
-func (s *Storage) AddUserToSegment(ctx context.Context, userID, segmentID int) error {
-	var tempSegmentID, tempUserID int
-	row := s.conn.QueryRow(ctx, "SELECT 1 FROM users WHERE user_id=$1", userID)
-	if err := row.Scan(&tempUserID); err != nil {
-		return storage.ErrNotExist
+func (s *Storage) AddUserToSegment(ctx context.Context, userID int, segment string) error {
+	segmentID, err := s.getSegmentIDByName(ctx, segment)
+	if err != nil {
+		return err
 	}
 
-	row = s.conn.QueryRow(ctx, joinUsersAndSegmentSQL, userID, segmentID)
+	var tempSegmentID int
+	row := s.conn.QueryRow(ctx, joinUsersAndSegmentSQL, userID, segmentID)
 	if err := row.Scan(&tempSegmentID); err == nil {
 		return storage.ErrAlreadyExist
 	}
 
-	_, err := s.conn.Exec(ctx, "INSERT INTO user_segment(user_id, segment_id) VALUES($1, $2);", userID, segmentID)
+	_, err = s.conn.Exec(ctx, "INSERT INTO user_segment(user_id, segment_id) VALUES($1, $2);", userID, segmentID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *Storage) DeleteUserFromSegment(ctx context.Context, userID, segmentID int) error {
+func (s *Storage) DeleteUserFromSegment(ctx context.Context, userID int, segment string) error {
+	segmentID, err := s.getSegmentIDByName(ctx, segment)
+	if err != nil {
+		return err
+	}
+
 	deleteSQL := "DELETE FROM user_segment us WHERE us.user_id = $1 AND us.segment_id = $2"
-	_, err := s.conn.Exec(ctx, deleteSQL, userID, segmentID)
+	_, err = s.conn.Exec(ctx, deleteSQL, userID, segmentID)
 	if err != nil {
 		return err
 	}
@@ -189,7 +185,7 @@ func (s *Storage) GetUser(ctx context.Context, id int) (models.User, error) {
 	row := s.conn.QueryRow(ctx, "SELECT user_id FROM users WHERE user_id = $1", id)
 	err := row.Scan(&tempUserID)
 	if err != nil {
-		return models.User{}, storage.ErrNotCreated
+		return models.User{}, storage.ErrNotExist
 	}
 	user := models.User{
 		ID:       id,
@@ -217,4 +213,38 @@ func (s *Storage) GetUser(ctx context.Context, id int) (models.User, error) {
 	}
 
 	return user, nil
+}
+
+func (s *Storage) IsUserCreated(ctx context.Context, userID int) (bool, error) {
+	row := s.conn.QueryRow(ctx, "SELECT 1 FROM users WHERE user_id = $1", userID)
+	err := row.Scan(&userID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *Storage) isSegmentCreated(ctx context.Context, segmentName string) (bool, error) {
+	var temp int
+	row := s.conn.QueryRow(ctx, "SELECT 1 FROM segment WHERE segment_name = $1", segmentName)
+	err := row.Scan(&temp)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *Storage) getSegmentIDByName(ctx context.Context, name string) (int, error) {
+	var segmentID int
+	row := s.conn.QueryRow(ctx, `SELECT segment_id FROM segment WHERE segment_name = $1;`, name)
+	if err := row.Scan(&segmentID); err != nil {
+		return 0, storage.ErrNotExist
+	}
+	return segmentID, nil
 }

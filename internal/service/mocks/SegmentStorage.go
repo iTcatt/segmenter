@@ -5,7 +5,7 @@ package mocks
 import (
 	context "context"
 
-	models "github.com/iTcatt/avito-task/internal/models"
+	models "github.com/iTcatt/segmenter/internal/models"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -14,17 +14,17 @@ type SegmentStorage struct {
 	mock.Mock
 }
 
-// AddUserToSegment provides a mock function with given fields: ctx, userID, segmentID
-func (_m *SegmentStorage) AddUserToSegment(ctx context.Context, userID int, segmentID int) error {
-	ret := _m.Called(ctx, userID, segmentID)
+// AddUserToSegment provides a mock function with given fields: ctx, userID, segment
+func (_m *SegmentStorage) AddUserToSegment(ctx context.Context, userID int, segment string) error {
+	ret := _m.Called(ctx, userID, segment)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AddUserToSegment")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, int, int) error); ok {
-		r0 = rf(ctx, userID, segmentID)
+	if rf, ok := ret.Get(0).(func(context.Context, int, string) error); ok {
+		r0 = rf(ctx, userID, segment)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -104,50 +104,22 @@ func (_m *SegmentStorage) DeleteUser(ctx context.Context, id int) error {
 	return r0
 }
 
-// DeleteUserFromSegment provides a mock function with given fields: ctx, userID, segmentID
-func (_m *SegmentStorage) DeleteUserFromSegment(ctx context.Context, userID int, segmentID int) error {
-	ret := _m.Called(ctx, userID, segmentID)
+// DeleteUserFromSegment provides a mock function with given fields: ctx, userID, segment
+func (_m *SegmentStorage) DeleteUserFromSegment(ctx context.Context, userID int, segment string) error {
+	ret := _m.Called(ctx, userID, segment)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteUserFromSegment")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, int, int) error); ok {
-		r0 = rf(ctx, userID, segmentID)
+	if rf, ok := ret.Get(0).(func(context.Context, int, string) error); ok {
+		r0 = rf(ctx, userID, segment)
 	} else {
 		r0 = ret.Error(0)
 	}
 
 	return r0
-}
-
-// GetSegmentIDByName provides a mock function with given fields: ctx, name
-func (_m *SegmentStorage) GetSegmentIDByName(ctx context.Context, name string) (int, error) {
-	ret := _m.Called(ctx, name)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetSegmentIDByName")
-	}
-
-	var r0 int
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (int, error)); ok {
-		return rf(ctx, name)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) int); ok {
-		r0 = rf(ctx, name)
-	} else {
-		r0 = ret.Get(0).(int)
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, name)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
 }
 
 // GetUser provides a mock function with given fields: ctx, id
@@ -171,6 +143,34 @@ func (_m *SegmentStorage) GetUser(ctx context.Context, id int) (models.User, err
 
 	if rf, ok := ret.Get(1).(func(context.Context, int) error); ok {
 		r1 = rf(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// IsUserCreated provides a mock function with given fields: ctx, userID
+func (_m *SegmentStorage) IsUserCreated(ctx context.Context, userID int) (bool, error) {
+	ret := _m.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsUserCreated")
+	}
+
+	var r0 bool
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, int) (bool, error)); ok {
+		return rf(ctx, userID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, int) bool); ok {
+		r0 = rf(ctx, userID)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, int) error); ok {
+		r1 = rf(ctx, userID)
 	} else {
 		r1 = ret.Error(1)
 	}
