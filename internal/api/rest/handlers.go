@@ -205,7 +205,7 @@ func (h *Handler) DeleteSegment(w http.ResponseWriter, r *http.Request) error {
 // @Success		204
 // @Failure		404
 // @Failure		500	{object}	ErrorResponse
-// @Router		/segment/{id} [delete]
+// @Router		/user/{id} [delete]
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) error {
 	op := "DeleteUserHandler:"
 

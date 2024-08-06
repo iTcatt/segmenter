@@ -22,5 +22,6 @@ func NewRouter(h *Handler) http.Handler {
 	router.Delete("/api/segment/{name}", errorsMiddleware(h.DeleteSegment))
 
 	router.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("swagger/doc.json")))
+
 	return router
 }

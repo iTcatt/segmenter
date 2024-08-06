@@ -42,27 +42,6 @@ paths:
       summary: CreateSegments
       tags:
       - segment
-  /segment/{id}:
-    delete:
-      description: delete user
-      parameters:
-      - description: userID
-        in: path
-        name: id
-        required: true
-        type: integer
-      responses:
-        "204":
-          description: No Content
-        "404":
-          description: Not Found
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/rest.ErrorResponse'
-      summary: DeleteUser
-      tags:
-      - user
   /segment/{name}:
     delete:
       description: delete segment
@@ -106,6 +85,26 @@ paths:
       tags:
       - user
   /user/{id}:
+    delete:
+      description: delete user
+      parameters:
+      - description: userID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: DeleteUser
+      tags:
+      - user
     get:
       description: get user segments
       parameters:
