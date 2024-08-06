@@ -1,0 +1,159 @@
+basePath: /api
+definitions:
+  models.User:
+    properties:
+      id:
+        type: integer
+      segments:
+        items:
+          type: string
+        type: array
+    type: object
+  rest.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact: {}
+  description: REST API server for saving users and their segments
+  title: segmenter
+  version: "1.0"
+paths:
+  /segment:
+    post:
+      consumes:
+      - application/json
+      description: Create segments
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: CreateSegments
+      tags:
+      - segment
+  /segment/{id}:
+    delete:
+      description: delete user
+      parameters:
+      - description: userID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: DeleteUser
+      tags:
+      - user
+  /segment/{name}:
+    delete:
+      description: delete segment
+      parameters:
+      - description: segment name
+        in: path
+        name: name
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: DeleteSegment
+      tags:
+      - segment
+  /user:
+    post:
+      consumes:
+      - application/json
+      description: Create users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: CreateUser
+      tags:
+      - user
+  /user/{id}:
+    get:
+      description: get user segments
+      parameters:
+      - description: userID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: GetUser
+      tags:
+      - user
+    patch:
+      consumes:
+      - application/json
+      description: Update user segments
+      parameters:
+      - description: userID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: UpdateUser
+      tags:
+      - user
+swagger: "2.0"

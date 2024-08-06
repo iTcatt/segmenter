@@ -5,6 +5,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	_ "github.com/iTcatt/segmenter/docs"
+	"github.com/swaggo/http-swagger"
 )
 
 func NewRouter(h *Handler) http.Handler {
@@ -19,5 +21,6 @@ func NewRouter(h *Handler) http.Handler {
 	router.Delete("/api/user/{id}", errorsMiddleware(h.DeleteUser))
 	router.Delete("/api/segment/{name}", errorsMiddleware(h.DeleteSegment))
 
+	router.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("swagger/doc.json")))
 	return router
 }

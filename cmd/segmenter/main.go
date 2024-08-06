@@ -11,6 +11,11 @@ import (
 	"github.com/iTcatt/segmenter/internal/storage/postgres"
 )
 
+// @title			segmenter
+// @version		1.0
+// @description	REST API server for saving users and their segments
+// @host			localhost:3000
+// @BasePath		/api
 func main() {
 	cfg := config.MustLoad()
 	db, err := postgres.NewStorage(cfg.Storage)

@@ -11,6 +11,9 @@ docker-build:
 docker-run:
 	docker compose up
 
+swag:
+	swag init -g ./cmd/segmenter/main.go
+
 clean:
 	rm segmenter
 

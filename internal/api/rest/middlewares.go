@@ -11,6 +11,10 @@ import (
 
 type wrapperHandler func(w http.ResponseWriter, r *http.Request) error
 
+type ErrorResponse struct {
+	Message string `json:"message"`
+}
+
 func errorsMiddleware(h wrapperHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := h(w, r)
@@ -23,9 +27,9 @@ func errorsMiddleware(h wrapperHandler) http.HandlerFunc {
 		case errors.Is(err, storage.ErrNotExist):
 			w.WriteHeader(http.StatusNotFound)
 		case errors.Is(err, ErrValidation):
-			_ = sendJSONResponse(w, map[string]string{"error": err.Error()}, http.StatusBadRequest)
+			_ = sendJSONResponse(w, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		default:
-			_ = sendJSONResponse(w, map[string]string{"error": err.Error()}, http.StatusInternalServerError)
+			_ = sendJSONResponse(w, ErrorResponse{Message: "internal error"}, http.StatusInternalServerError)
 		}
 	}
 }

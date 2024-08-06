@@ -38,6 +38,14 @@ func NewHandler(s SegmentService) *Handler {
 	}
 }
 
+// @Summary		CreateSegments
+// @Description	Create segments
+// @Tags			segment
+// @Accept			json
+// @Produce		json
+// @Success		200	{object}	map[string]string
+// @Failure		500	{object}	ErrorResponse
+// @Router			/segment [post]
 func (h *Handler) CreateSegments(w http.ResponseWriter, r *http.Request) error {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -58,6 +66,14 @@ func (h *Handler) CreateSegments(w http.ResponseWriter, r *http.Request) error {
 	return sendJSONResponse(w, reply, http.StatusCreated)
 }
 
+// @Summary		CreateUser
+// @Description	Create users
+// @Tags			user
+// @Accept			json
+// @Produce		json
+// @Success		200	{object}	map[int]string
+// @Failure		500	{object}	ErrorResponse
+// @Router			/user [post]
 func (h *Handler) CreateUsers(w http.ResponseWriter, r *http.Request) error {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -80,6 +96,16 @@ func (h *Handler) CreateUsers(w http.ResponseWriter, r *http.Request) error {
 	return sendJSONResponse(w, reply, http.StatusCreated)
 }
 
+// @Summary		UpdateUser
+// @Description	Update user segments
+// @Tags			user
+// @Param			id	path	int	true	"userID"
+// @Accept			json
+// @Produce		json
+// @Success		200	{object}	models.User
+// @Failure		404
+// @Failure		500	{object}	ErrorResponse
+// @Router			/user/{id} [patch]
 func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) error {
 	op := "UpdateUser:"
 
@@ -121,6 +147,15 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) error {
 	return sendJSONResponse(w, user, http.StatusOK)
 }
 
+// @Summary		GetUser
+// @Description	get user segments
+// @Tags		user
+// @Param		id	path	int	true	"userID"
+// @Produce		json
+// @Success		200	{object}	models.User
+// @Failure		404
+// @Failure		500	{object}	ErrorResponse
+// @Router		/user/{id} [get]
 func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) error {
 	op := "GetUserSegmentsHandler:"
 
@@ -141,6 +176,14 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) error {
 	return sendJSONResponse(w, user, http.StatusOK)
 }
 
+// @Summary		DeleteSegment
+// @Description	delete segment
+// @Tags		segment
+// @Param		name	path	string	true	"segment name"
+// @Success		204
+// @Failure		404
+// @Failure		500	{object}	ErrorResponse
+// @Router		/segment/{name} [delete]
 func (h *Handler) DeleteSegment(w http.ResponseWriter, r *http.Request) error {
 	op := "DeleteSegment"
 
@@ -155,6 +198,14 @@ func (h *Handler) DeleteSegment(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// @Summary		DeleteUser
+// @Description	delete user
+// @Tags		user
+// @Param		id	path	int	true	"userID"
+// @Success		204
+// @Failure		404
+// @Failure		500	{object}	ErrorResponse
+// @Router		/segment/{id} [delete]
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) error {
 	op := "DeleteUserHandler:"
 
